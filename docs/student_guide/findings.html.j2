@@ -25,7 +25,14 @@ p = {{ "%.2g"|format(r.p) }})
   ({{ c.runs['qwen-dolly-lora'].utility }} and {{ c.runs['smol-dolly-lora'].utility }} correct answers). A team
   watching only task metrics would ship the weaker model.</li>
 {% endif %}
-{{ c.extra_tldr | default('') | safe }}
+{% if 'qwen-dolly-lora-secanchor' in c.runs and 'qwen-dolly-lora' in c.runs %}
+{% set p = c.runs['qwen-dolly-lora'] %}{% set s = c.runs['qwen-dolly-lora-secanchor'] %}
+<li><b>It can be prevented.</b> SecAnchor — keeping the hardening's own preference loss active on a few "anchor"
+  examples during the fine-tune — took the same Dolly fine-tune to {{ s.asr }} instead of {{ p.asr }}, below the
+  hardened base it started from, while learning the task just as well (held-out loss {{ "%.3f"|format(s.task_after) }}
+  vs {{ "%.3f"|format(p.task_after) }}). Simply mixing in hardening examples (replay) did not help{% if 'qwen-dolly-lora-replay' in c.runs %}
+  ({{ c.runs['qwen-dolly-lora-replay'].asr }}){% endif %}.</li>
+{% endif %}
 <li><b>The margin erodes even when the headline number doesn't.</b> The probability the model gives the
   injected reply rose in {{ c.n_lp_up }} of {{ c.n_plain }} plain fine-tunes, including ones whose attack success rate
   did not change. In the Qwen Dolly run it had moved most of the way within the first third of training, while
@@ -104,7 +111,7 @@ one token at a time, for a 16-token suffix that makes the model start its answer
 base itself.</p>
 <p>The realistic threat model is a <em>transfer</em> attack: an attacker can download the public hardened base but not a
 company's private fine-tune, so they optimize suffixes on the base and replay them. The same suffixes, replayed against
-each fine-tune:</p>
+each Qwen LoRA fine-tune (the full fine-tune's weights were not kept):</p>
 {{ c.gcg_transfer_table | safe }}
 {% else %}
 <p>GCG results are added when the adaptive-attack runs finish.</p>
@@ -144,9 +151,12 @@ SecAnchor's preference term does both, and that difference is the whole result.<
 {% endif %}
 {% if 'qwen-rag-lora' in c.runs and 'qwen-rag-secure-lora' in c.runs %}
 {% set a = c.runs['qwen-rag-lora'] %}{% set b = c.runs['qwen-rag-secure-lora'] %}
-<p><b>The free option: format the fine-tuning data securely.</b> Fine-tuning on RAG data with the retrieved context in the
+<p><b>The free option: format the fine-tuning data securely?</b> Fine-tuning on RAG data with the retrieved context in the
 user turn gave ASR {{ a.asr }} ({{ "%+.1f"|format(a.delta_pp) }} points); the same data with the context in the
-<code>input</code> role gave {{ b.asr }} ({{ "%+.1f"|format(b.delta_pp) }} points).</p>
+<code>input</code> role gave {{ b.asr }} ({{ "%+.1f"|format(b.delta_pp) }} points).{% if a.p >= 0.05 %} Careful, though:
+the naive-format run did not erode Qwen's robustness in the first place, so there was nothing for the secure format to
+prevent. This pilot cannot tell whether secure formatting protects — an honest "we don't know yet", and a good
+experiment to run next.{% endif %}</p>
 {% endif %}
 {% endif %}
 {% endmacro %}
