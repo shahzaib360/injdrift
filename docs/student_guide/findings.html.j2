@@ -92,8 +92,37 @@ relation. With a dozen runs these are rough numbers, but they say which probes a
 {{ c.gcg_text | default('<p>GCG results are added when the adaptive-attack runs finish.</p>') | safe }}
 {% endmacro %}
 
+{% macro mit_line(c, rid, name) -%}
+{%- if rid in c.runs -%}{%- set r = c.runs[rid] -%}
+<li><b>{{ name }}</b>: ASR {{ r.asr }} ({{ "%+.1f"|format(r.delta_pp) }} points vs the hardened base; {{ r.broken }}
+  prompts newly broken, {{ r.fixed }} newly fixed), best-of-K {{ r.bestk }}, utility {{ r.utility }}, held-out Dolly
+  loss {{ "%.3f"|format(r.task_after) }}.</li>
+{%- endif -%}
+{%- endmacro %}
+
 {% macro r_mitigation(c) %}
-{{ c.mitigation_text | default('') | safe }}
+{% if 'qwen-dolly-lora' in c.runs and 'qwen-dolly-lora-secanchor' in c.runs %}
+<p>All methods below fine-tune the hardened Qwen on the same 768 Dolly examples for the same number of steps. The
+plain run is the one that eroded robustness in chapter 6.</p>
+<ul>
+{{ mit_line(c, 'qwen-dolly-lora', 'Plain fine-tune') }}
+{{ mit_line(c, 'qwen-dolly-lora-replay', 'Replay') }}
+{{ mit_line(c, 'qwen-dolly-lora-reharden', 'Re-harden afterwards') }}
+{{ mit_line(c, 'qwen-dolly-lora-secanchor', 'SecAnchor') }}
+</ul>
+{% set p = c.runs['qwen-dolly-lora'] %}{% set s = c.runs['qwen-dolly-lora-secanchor'] %}
+<p>How to read this: the held-out Dolly loss tells you whether the model still learned its new job — SecAnchor's
+{{ "%.3f"|format(s.task_after) }} versus {{ "%.3f"|format(p.task_after) }} for the plain run means it did. At the same
+time its attack success rate ended <em>below</em> the hardened base it started from, because the anchor term keeps
+SecAlign's objective alive during the fine-tune. The price is compute (the anchor pairs cost about as much as the
+task batch for short examples like Dolly's) and a smaller utility gain than the plain fine-tune.</p>
+{% if 'qwen-rag-lora' in c.runs and 'qwen-rag-secure-lora' in c.runs %}
+{% set a = c.runs['qwen-rag-lora'] %}{% set b = c.runs['qwen-rag-secure-lora'] %}
+<p><b>The free option: format the fine-tuning data securely.</b> Fine-tuning on RAG data with the retrieved context in the
+user turn gave ASR {{ a.asr }} ({{ "%+.1f"|format(a.delta_pp) }} points); the same data with the context in the
+<code>input</code> role gave {{ b.asr }} ({{ "%+.1f"|format(b.delta_pp) }} points).</p>
+{% endif %}
+{% endif %}
 {% endmacro %}
 
 {% macro r_gate(c) %}
