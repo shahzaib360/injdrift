@@ -114,21 +114,24 @@ def t_gate(data: dict) -> list[str]:
     return lines
 
 
-def t_gcg(_: dict) -> list[str]:
+def t_gcg(data: dict) -> list[str]:
     gdir = RESULTS / "gcg"
     if not gdir.exists():
         return ["*GCG results pending.*"]
-    lines = ["| target | attack | success |", "| --- | --- | --- |"]
-    for p in sorted(gdir.glob("*.json")):
+    lines = ["| target (Qwen2.5-0.5B) | attack | success |", "| --- | --- | --- |"]
+    base = gdir / "qwen-secalign.json"
+    if base.exists():
+        d = json.loads(base.read_text())
+        k = sum(bool(r["success"]) for r in d["results"])
+        lines.append(f"| **hardened base** | GCG optimized on this model | **{k}/{d['n']}** |")
+    rows = []
+    for p in sorted(gdir.glob("*.transfer.json")):
         d = json.loads(p.read_text())
         k = sum(bool(r["success"]) for r in d["results"])
-        name = p.name.removesuffix(".json").removesuffix(".transfer")
-        kind = (
-            "suffixes found on the hardened base, replayed"
-            if d["kind"] == "transfer"
-            else "GCG on this model"
-        )
-        lines.append(f"| {name} | {kind} | {k}/{d['n']} |")
+        rid = p.name.removesuffix(".transfer.json")
+        label = run_label(data["runs"][rid]["spec"]) if rid in data["runs"] else rid
+        rows.append((-k, label, f"| {label} | base's suffixes, replayed | {k}/{d['n']} |"))
+    lines += [r[2] for r in sorted(rows)]
     return lines
 
 
