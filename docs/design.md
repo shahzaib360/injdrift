@@ -55,7 +55,9 @@ dialect renders its `input` role).
 | attacks | static: naive, ignore, escape, completion, completion_chat, combined · adaptive: best-of-K over attacks × positions, GCG (+ transfer of GCG suffixes) |
 | suites | AlpacaFarm-208 (in-distribution), SQuAD (RAG-shaped), synthetic JSON tool results (OOD, JSON-escaped) |
 
-All SFT runs use 768 examples (96 optimizer steps at batch 8); DPO runs 384 pairs.
+All SFT runs use 768 examples (96 optimizer steps at batch 8); DPO runs 384 pairs. The pilot ran
+the subset of this cross product listed in `configs/grid/pilot.yaml` (CPU budget);
+`configs/grid/full.yaml` is the complete version for a GPU.
 
 ## Metrics
 
