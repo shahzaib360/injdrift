@@ -247,13 +247,15 @@ def release_memory() -> None:
         ctypes.CDLL("libc.so.6").malloc_trim(0)
 
 
-def limit_malloc_arenas(n: int = 2, mmap_threshold: int = 4 << 20) -> None:
+def limit_malloc_arenas(n: int = 2, mmap_threshold: int = 256 << 10) -> None:
     """Tune glibc malloc for long CPU training jobs (no-op elsewhere).
 
     * fewer arenas -> less fragmentation across threads;
-    * a *fixed* mmap threshold: blocks of 4 MB and up (activations, logits) are mmapped
-      and handed back to the OS when freed. Left alone, glibc raises the threshold
-      after large frees and serves later tensors from a heap that never shrinks.
+    * a *fixed*, low mmap threshold: blocks of 256 KB and up -- which includes the
+      per-layer activations of a 1,024-token micro-batch -- are mmapped and handed back
+      to the OS when freed. Left alone, glibc raises the threshold after large frees and
+      serves activations from a heap that fragments and never shrinks (measured: a LoRA
+      run on a 0.5B model held ~4.6 GB of freed heap).
     """
     import ctypes
 

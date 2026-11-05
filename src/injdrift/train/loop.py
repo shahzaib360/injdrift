@@ -21,7 +21,14 @@ from dataclasses import asdict, dataclass
 import torch
 import torch.nn.functional as F
 
-from injdrift.modeling import LORA_TARGETS, Loaded, _batches, _gather_logprobs, autocast
+from injdrift.modeling import (
+    LORA_TARGETS,
+    Loaded,
+    _batches,
+    _gather_logprobs,
+    autocast,
+    release_memory,
+)
 from injdrift.train.examples import PrefExample, SFTExample
 
 
@@ -282,6 +289,8 @@ def train(
         opt.zero_grad(set_to_none=True)
         rec["elapsed_s"] = round(time.perf_counter() - t0, 1)
         history.append(rec)
+        if step % 8 == 0:
+            release_memory()
         if log:
             log(rec)
         if tracker is not None and step in track_steps:
