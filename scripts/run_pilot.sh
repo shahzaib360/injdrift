@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Reproduce every number in results/pilot on a CPU-only machine.
 #
-# Wall-clock on a 4-core Xeon (AMX bf16), one job at a time: roughly 7-8 hours.
-# Every step is resumable: finished hardening runs and grid entries are skipped.
+# Wall-clock on a 4-core Xeon (AMX bf16): about 8 hours when run as two parallel jobs with
+# OMP_NUM_THREADS=2 each (that is how results/pilot was produced); RAG-length fine-tunes take
+# ~60 min each at that setting. Every step is resumable: finished hardening runs and grid
+# entries are skipped.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
