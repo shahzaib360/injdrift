@@ -116,6 +116,13 @@ plain run is the one that eroded robustness in chapter 6.</p>
 time its attack success rate ended <em>below</em> the hardened base it started from, because the anchor term keeps
 SecAlign's objective alive during the fine-tune. The price is compute (the anchor pairs cost about as much as the
 task batch for short examples like Dolly's) and a smaller utility gain than the plain fine-tune.</p>
+{% if 'qwen-dolly-lora-replay' in c.runs %}{% set rp = c.runs['qwen-dolly-lora-replay'] %}
+<p><b>Why not just mix in some security examples?</b> That is what <em>replay</em> does: one hardening-style example (an
+injected prompt with the correct answer) in every training step. It ended at {{ rp.asr }} —
+{% if rp.asr_raw > p.asr_raw %}<em>worse</em> than the plain fine-tune{% else %}no better than the plain fine-tune{% endif %}.
+Supervised replay only makes the right answer more likely; it never makes the injected answer <em>less</em> likely.
+SecAnchor's preference term does both, and that difference is the whole result.</p>
+{% endif %}
 {% if 'qwen-rag-lora' in c.runs and 'qwen-rag-secure-lora' in c.runs %}
 {% set a = c.runs['qwen-rag-lora'] %}{% set b = c.runs['qwen-rag-secure-lora'] %}
 <p><b>The free option: format the fine-tuning data securely.</b> Fine-tuning on RAG data with the retrieved context in the
