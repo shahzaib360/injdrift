@@ -316,8 +316,8 @@ an ablation and fine-tunes the early-stopped one.</p></div>
 <tr><td><code>tool</code></td><td>call a function, read its result, answer (SFT)</td><td>glaive function calling v2</td><td>yes</td></tr>
 <tr><td><code>ultrafeedback</code></td><td>be more helpful (DPO)</td><td>UltraFeedback preference pairs</td><td>no</td></tr>
 </table>
-<p>Every SFT run uses 768 examples (96 optimizer steps of 8); the DPO run uses 384 pairs. Nothing in these
-datasets mentions prompt injection. Recipes with a data channel are run in two <strong>formats</strong>:
+<p>Every SFT run samples 768 examples — about 96 optimizer steps of 8 (a few RAG examples longer than 448 tokens
+are dropped) — and the DPO run uses 384 pairs. Nothing in these datasets mentions prompt injection. Recipes with a data channel are run in two <strong>formats</strong>:
 <code>naive</code> (the retrieved context or tool result is pasted into the user's turn — what most teams do)
 and <code>secure</code> (it goes into the <code>input</code> role the hardened model was trained on).</p>
 
@@ -330,8 +330,9 @@ and <code>secure</code> (it goes into the <code>input</code> role the hardened m
   <li><b>Tool output</b> — synthetic JSON results (weather, flights, orders…) with the injection hidden
     inside a text field and JSON-escaped, the way it would arrive from a real tool.</li>
 </ul>
-<p>The standard evaluation is 1,216 prompts: six attack families at the end position on 128 items, extra
-positions (start, middle) for half of them, and clean prompts for measuring utility.</p>
+<p>The standard evaluation is 1,216 prompts: six attack families at the end position on 128 items (768 attacked
+prompts), the <code>ignore</code>, <code>completion</code> and <code>combined</code> families again at the start and
+middle positions on half of the items, and 64 clean SQuAD/tool prompts for measuring utility.</p>
 
 <h2>4.5 Metrics</h2>
 <table>
