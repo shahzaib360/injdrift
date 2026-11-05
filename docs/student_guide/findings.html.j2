@@ -1,0 +1,10 @@
+{# Narrative blocks for the guide. Written after the results were in; every number
+   below comes from the context computed in scripts/build_student_guide.py. #}
+{% macro tldr_html(c) %}<p>(Summary will be written when all experiments have finished.)</p>{% endmacro %}
+{% macro r_hardening(c) %}<p>Hardening cut static ASR on Qwen2.5-0.5B from {{ c.evals['eval-qwen-undefended'].asr }} to {{ c.main.asr }}.</p>{% endmacro %}
+{% macro r_erosion(c) %}{% endmacro %}
+{% macro r_tracking(c) %}{% endmacro %}
+{% macro r_probes(c) %}{% endmacro %}
+{% macro r_gcg(c) %}{% endmacro %}
+{% macro r_mitigation(c) %}{% endmacro %}
+{% macro r_gate(c) %}{% endmacro %}

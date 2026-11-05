@@ -26,3 +26,5 @@ checkpoints/
 
 # live training logs (everything they show is also in the result JSON)
 results/*/logs/
+# intermediate HTML of the student guide (the PDF is committed)
+docs/student_guide/guide.html

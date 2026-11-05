@@ -55,6 +55,11 @@ THEMES = {
 }
 
 PRESERVE_LABEL = {"none": "", "replay": " + replay", "secanchor": " + SecAnchor"}
+MODEL_NAMES = {"qwen": "Qwen2.5-0.5B-Instruct", "smol": "SmolLM2-360M-Instruct"}
+
+
+def model_name(key: str) -> str:
+    return MODEL_NAMES.get(key, key)
 
 
 # ----------------------------------------------------------------------------- loading
@@ -428,7 +433,11 @@ def fig_erosion(data: dict, out: Path, mode: str) -> bool:
         ax.set_xlim(0, max([*vals, *(r[0] for r in refs), 10]) * 1.18 + 4)
         ax.set_ylim(-0.6, len(runs) + 0.4)
         ax.set_xlabel("static attack success rate (%), secure prompt format, 95% Wilson CI")
-        ax.set_title(f"{model}: injection ASR after ordinary fine-tuning", loc="left", fontsize=11)
+        ax.set_title(
+            f"{model_name(model)}: injection ASR after ordinary fine-tuning",
+            loc="left",
+            fontsize=11,
+        )
     from matplotlib.patches import Patch
 
     handles = [Patch(color=th["series"][i], label=g) for g, i in groups.items()]
@@ -458,7 +467,8 @@ def _trajectory_runs(data: dict, model: str) -> list[tuple[str, dict]]:
     return sel[:8]
 
 
-def fig_trajectories(data: dict, out: Path, mode: str, model: str) -> bool:
+def fig_trajectories(data: dict, out: Path, mode: str, model: str, grid: bool = False) -> bool:
+    """Tracked metrics vs fraction of fine-tuning; ``grid`` gives a 2x2 portrait layout."""
     runs = _trajectory_runs(data, model)
     if not runs:
         return False
@@ -477,8 +487,8 @@ def fig_trajectories(data: dict, out: Path, mode: str, model: str) -> bool:
             lambda t: t["probes"]["summary"]["fixed_dprime"]["upper_mean"],
         ),
     ]
-    fig, axes = _figure(1, 4, (15, 3.6), th)
-    for ax, (_, ylabel, fn) in zip(axes[0], panels, strict=True):
+    fig, axes = _figure(2, 2, (9.5, 7.2), th) if grid else _figure(1, 4, (15, 3.6), th)
+    for ax, (_, ylabel, fn) in zip(axes.flat, panels, strict=True):
         for i, (_, d) in enumerate(runs):
             xs = [t["frac"] for t in d["tracking"]]
             try:
@@ -505,22 +515,22 @@ def fig_trajectories(data: dict, out: Path, mode: str, model: str) -> bool:
         handles,
         labels,
         loc="lower center",
-        ncol=min(4, len(labels)),
+        ncol=min(3 if grid else 4, len(labels)),
         frameon=False,
         fontsize=9,
-        bbox_to_anchor=(0.5, -0.12),
+        bbox_to_anchor=(0.5, -0.08 if grid else -0.12),
     )
     for t in leg.get_texts():
         t.set_color(th["text"])
     fig.suptitle(
-        f"{model}: robustness and separation probes during fine-tuning",
+        f"{model_name(model)}: robustness and separation probes during fine-tuning",
         x=0.01,
         ha="left",
         color=th["text"],
         fontsize=11.5,
     )
     fig.tight_layout(rect=(0, 0.02, 1, 0.97))
-    _save(fig, out, f"trajectories-{model}", mode)
+    _save(fig, out, f"trajectories-{model}{'-grid' if grid else ''}", mode)
     return True
 
 
@@ -683,5 +693,6 @@ def build_report(results: Path, out: Path) -> Path:
         fig_hardening(data, figs, mode)
         for model in models:
             fig_trajectories(data, figs, mode, model)
+            fig_trajectories(data, figs, mode, model, grid=True)
             fig_mitigation(data, figs, mode, model)
     return path
