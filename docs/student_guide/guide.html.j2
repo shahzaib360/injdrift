@@ -450,7 +450,7 @@ ways to do that while running exactly the same recipe, data and number of steps:
 <tr><td><b>re-harden</b></td><td>after fine-tuning, run a short SecAlign DPO pass (256 pairs)</td><td>a second training stage</td></tr>
 <tr><td><b>SecAnchor</b> (this project)</td><td>add SecAlign's own DPO loss on two "anchor" pairs to every step, measured
   against the hardened base, so any update that makes the injected answer relatively more likely is pushed back
-  immediately</td><td>2 short pairs per step</td></tr>
+  immediately</td><td>2 pairs per step (2.4× training time on the Dolly pilot)</td></tr>
 </table>
 {{ mitigation_table | safe }}
 {{ r_mitigation | safe }}

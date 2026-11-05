@@ -106,9 +106,11 @@ L(θ) = L_task(θ) + λ · L_DPO(θ; θ_ref = hardened base, pairs from the `anc
 
 Each optimizer step adds `anchor_pairs` (2) SecAlign-style preference pairs from a
 partition disjoint from both the hardening data and every probe/evaluation item. The
-reference log-probs come from the hardened base and are computed once, so the extra
-cost is one forward/backward over two short pairs per step (~20–30% on top of the task
-batch). In effect SecAlign's own objective is kept alive, on a small held-out anchor
+reference log-probs come from the hardened base and are computed once; the extra cost is
+a forward/backward over two anchor pairs (four sequences) per step. That is cheap next to a
+long-sequence batch but not next to a short one: on the Dolly pilot (≈110-token examples, CPU)
+SecAnchor took 2.4× the plain run's training time. One anchor pair per step, or anchoring
+every k-th step, are the obvious knobs. In effect SecAlign's own objective is kept alive, on a small held-out anchor
 set, for the whole downstream fine-tune: the margin is measured *relative to the
 hardened base*, so any task update that makes the injected answer relatively more
 likely is pushed back immediately, and the logistic loss saturates once the secure
