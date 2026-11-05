@@ -26,9 +26,10 @@ p = {{ "%.2g"|format(r.p) }})
   watching only task metrics would ship the weaker model.</li>
 {% endif %}
 {{ c.extra_tldr | default('') | safe }}
-<li><b>The warning comes early.</b> Inside the model, the probability of the injected reply and the separation
-  between "instruction" and "data" representations move within the first third of fine-tuning, before the
-  attack success rate does.</li>
+<li><b>The margin erodes even when the headline number doesn't.</b> The probability the model gives the
+  injected reply rose in {{ c.n_lp_up }} of {{ c.n_plain }} plain fine-tunes, including ones whose attack success rate
+  did not change. In the Qwen Dolly run it had moved most of the way within the first third of training, while
+  the attack success rate on the tracking set had barely moved — a signal a CI job can watch.</li>
 <li><b>It can be caught automatically.</b> The project's CI gate, which compares a fine-tune with its hardened base
   on the same prompts, flags {{ c.gate_counts.fail }} of {{ c.gate_counts.total }} fine-tunes in the pilot.</li>
 </ul>
