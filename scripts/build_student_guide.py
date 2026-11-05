@@ -219,6 +219,9 @@ def build_context() -> dict:
             )
     ctx["runs"] = runs
     ctx["erosion_tables"] = erosion_tables
+    ctx["base_asr"] = {
+        m: base_eval(data, m)[0]["asr"]["rate"] for m in ("qwen", "smol") if base_eval(data, m)[0]
+    }
 
     # ------------------------------------------------- probes vs erosion
     sig = probe_signal_rows(data)
