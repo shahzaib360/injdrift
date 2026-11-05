@@ -33,6 +33,8 @@ ADAPTERS = Path("runs/adapters")
 class Logger:
     def __init__(self, path: Path | None = None) -> None:
         self.path = path
+        if path is not None:
+            path.parent.mkdir(parents=True, exist_ok=True)
         self.t0 = time.perf_counter()
 
     def __call__(self, msg: str | dict) -> None:
