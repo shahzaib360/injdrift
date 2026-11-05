@@ -247,12 +247,20 @@ def release_memory() -> None:
         ctypes.CDLL("libc.so.6").malloc_trim(0)
 
 
-def limit_malloc_arenas(n: int = 2) -> None:
-    """Fewer glibc arenas means less fragmentation for multi-threaded CPU jobs."""
+def limit_malloc_arenas(n: int = 2, mmap_threshold: int = 4 << 20) -> None:
+    """Tune glibc malloc for long CPU training jobs (no-op elsewhere).
+
+    * fewer arenas -> less fragmentation across threads;
+    * a *fixed* mmap threshold: blocks of 4 MB and up (activations, logits) are mmapped
+      and handed back to the OS when freed. Left alone, glibc raises the threshold
+      after large frees and serves later tensors from a heap that never shrinks.
+    """
     import ctypes
 
     with contextlib.suppress(OSError, AttributeError):
-        ctypes.CDLL("libc.so.6").mallopt(-8, n)  # M_ARENA_MAX
+        libc = ctypes.CDLL("libc.so.6")
+        libc.mallopt(-8, n)  # M_ARENA_MAX
+        libc.mallopt(-3, mmap_threshold)  # M_MMAP_THRESHOLD
 
 
 def set_threads() -> None:
