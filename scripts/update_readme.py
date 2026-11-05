@@ -132,7 +132,46 @@ def t_gcg(_: dict) -> list[str]:
     return lines
 
 
-TABLES = {"hardening": t_hardening, "erosion": t_erosion, "gate": t_gate, "gcg": t_gcg}
+def t_mitigation(data: dict) -> list[str]:
+    lines = [
+        "| recipe | method | static ASR | Δ vs hardened base | newly broken / fixed (p) "
+        "| best-of-K | utility | held-out task loss | train time |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+    ]
+    base, base_rows = base_eval(data, "qwen")
+    groups = [
+        ("dolly", "qwen-dolly-lora", "plain fine-tune"),
+        ("dolly", "qwen-dolly-lora-replay", "+ replay"),
+        ("dolly", "qwen-dolly-lora-reharden", "+ post-hoc re-hardening"),
+        ("dolly", "qwen-dolly-lora-secanchor", "**+ SecAnchor**"),
+        ("rag", "qwen-rag-lora", "plain fine-tune (naive format)"),
+        ("rag", "qwen-rag-secure-lora", "secure format"),
+    ]
+    for recipe, rid, method in groups:
+        d = data["runs"].get(rid)
+        if not d or not base:
+            continue
+        s = d["eval"]["secure"]
+        pr = paired(base_rows, _read_rows(RESULTS / "rows" / f"{rid}.jsonl.gz"))
+        delta = 100 * (s["asr"]["rate"] - base["asr"]["rate"])
+        secs = d["train_seconds"] + sum(
+            h.get("elapsed_s", 0) for h in (d.get("reharden_history") or [])[-1:]
+        )
+        lines.append(
+            f"| {recipe} | {method} | {ci(s['asr'])} | {delta:+.1f} pp "
+            f"| {pr['broken']} / {pr['fixed']} (p={pr['p']:.2g}) | {pct(s['best_of_k']['rate'])} "
+            f"| {pct(s['utility']['rate'])} | {d['heldout']['after']:.2f} | {secs / 60:.0f} min |"
+        )
+    return lines
+
+
+TABLES = {
+    "hardening": t_hardening,
+    "erosion": t_erosion,
+    "mitigation": t_mitigation,
+    "gate": t_gate,
+    "gcg": t_gcg,
+}
 
 
 def main() -> None:
