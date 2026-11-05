@@ -219,6 +219,42 @@ def build_context() -> dict:
             )
     ctx["runs"] = runs
     ctx["erosion_tables"] = erosion_tables
+    base_util = {
+        m: base_eval(data, m)[0]["utility"]["rate"]
+        for m in ("qwen", "smol")
+        if base_eval(data, m)[0]
+    }
+    plain = {
+        rid: r
+        for rid, r in runs.items()
+        if r["spec"]["preserve"] == "none" and not r["spec"].get("reharden")
+    }
+    ctx["sig_runs"] = [
+        f"{MODEL_NAMES[rid.split('-')[0]]} {r['label']}"
+        for rid, r in plain.items()
+        if r["p"] < 0.05
+    ]
+    ctx["nonsig_runs"] = [
+        f"{MODEL_NAMES[rid.split('-')[0]]} {r['label']}"
+        for rid, r in plain.items()
+        if r["p"] >= 0.05
+    ]
+    from injdrift.train.recipes import RECIPES
+
+    ctx["nonsig_all_no_channel"] = bool(ctx["nonsig_runs"]) and all(
+        not RECIPES[r["spec"]["recipe"]].data_channel for r in plain.values() if r["p"] >= 0.05
+    )
+    ctx["sig_all_channel"] = bool(ctx["sig_runs"]) and all(
+        RECIPES[r["spec"]["recipe"]].data_channel for r in plain.values() if r["p"] < 0.05
+    )
+    ctx["n_plain"] = len(plain)
+    ctx["n_lp_up"] = sum(1 for r in plain.values() if r["lp1"] > r["lp0"])
+    ctx["n_util_up_sig"] = sum(
+        1
+        for rid, r in plain.items()
+        if r["p"] < 0.05
+        and float(r["utility"].rstrip("%")) / 100 > base_util.get(rid.split("-")[0], 1.0)
+    )
     ctx["base_asr"] = {
         m: base_eval(data, m)[0]["asr"]["rate"] for m in ("qwen", "smol") if base_eval(data, m)[0]
     }

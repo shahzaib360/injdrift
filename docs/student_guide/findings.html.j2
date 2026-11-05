@@ -50,9 +50,21 @@ from {{ c.evals['eval-qwen-undefended'].bestk }} to {{ c.main.bestk }}. Three le
 {% endmacro %}
 
 {% macro r_erosion(c) %}
-<p>Each row below is one ordinary fine-tune of a hardened model, evaluated on exactly the same 1,216 prompts as
-its base. "Broken / fixed" counts the prompts that flipped, which is what the McNemar p-value is computed from.</p>
-{{ c.erosion_text | default('') | safe }}
+<p>Each row in the tables below is one ordinary fine-tune of a hardened model, evaluated on exactly the same 1,216
+prompts as its base. "Broken / fixed" counts the prompts that flipped, which is what the McNemar p-value is computed
+from. Of the {{ c.n_plain }} plain fine-tunes in the pilot:</p>
+<ul>
+<li><b>{{ c.sig_runs | length }} made the model significantly easier to hijack</b> (p &lt; 0.05):
+  {{ c.sig_runs | join('; ') }}.{% if c.n_util_up_sig %} In {{ c.n_util_up_sig }} of them the model's clean-task
+  accuracy went <em>up</em> at the same time — exactly the situation in which nobody would think to re-test
+  security.{% endif %}</li>
+<li><b>{{ c.nonsig_runs | length }} did not</b>: {{ c.nonsig_runs | join('; ') }}.{% if c.nonsig_all_no_channel and c.sig_all_channel %}
+  Notice the split: every recipe that eroded robustness trains on examples where retrieved context, tool output or
+  other data sits in the user turn next to an instruction, and every recipe that did not has no such data channel.
+  The fine-tune is literally teaching the model "content in the user turn is something to act on".{% endif %}</li>
+<li><b>Inside the model the margin shrank in {{ c.n_lp_up }} of {{ c.n_plain }} runs</b>: the log-probability of the
+  injected reply rose even when the attack success rate did not.</li>
+</ul>
 {% endmacro %}
 
 {% macro r_tracking(c) %}
@@ -69,7 +81,11 @@ success rate followed later. This is what "quiet" erosion looks like: the safety
 {% endmacro %}
 
 {% macro r_probes(c) %}
-{{ c.probes_text | default('') | safe }}
+{% if c.probe_corr %}
+<p>Across all runs, how well does the change in each internal signal track the change in attack success? A
+correlation near +1 means "when this signal goes up, robustness goes down"; near −1 the opposite; near 0, no
+relation. With a dozen runs these are rough numbers, but they say which probes are worth watching in a CI job.</p>
+{% endif %}
 {% endmacro %}
 
 {% macro r_gcg(c) %}
