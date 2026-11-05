@@ -609,7 +609,12 @@ def fig_mitigation(data: dict, out: Path, mode: str, model: str) -> bool:
             )
         ax.set_xlabel("held-out task loss after fine-tuning (NLL, lower = better task fit)")
         ax.set_ylabel("static ASR (%)")
-        ax.set_title(f"{recipe} · {peft}: robustness vs task fit", loc="left", fontsize=10.5)
+        kind = "LoRA" if peft == "lora" else "full fine-tune"
+        ax.set_title(
+            f"{model_name(model)} · {recipe.capitalize()} ({kind}): robustness vs task fit",
+            loc="left",
+            fontsize=10.5,
+        )
         ax.margins(x=0.25, y=0.2)
     fig.tight_layout()
     _save(fig, out, f"mitigation-{model}", mode)
