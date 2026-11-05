@@ -247,16 +247,15 @@ def build_context() -> dict:
     mit_rows = []
     groups = [
         (
-            "rag",
+            "dolly",
             [
-                "qwen-rag-lora",
-                "qwen-rag-secure-lora",
-                "qwen-rag-lora-replay",
-                "qwen-rag-lora-secanchor",
-                "qwen-rag-lora-reharden",
+                "qwen-dolly-lora",
+                "qwen-dolly-lora-replay",
+                "qwen-dolly-lora-reharden",
+                "qwen-dolly-lora-secanchor",
             ],
         ),
-        ("dolly", ["qwen-dolly-lora", "qwen-dolly-lora-secanchor"]),
+        ("rag", ["qwen-rag-lora", "qwen-rag-secure-lora"]),
     ]
     for recipe, ids in groups:
         for rid in ids:
@@ -264,13 +263,12 @@ def build_context() -> dict:
             if not r:
                 continue
             method = {
-                "qwen-rag-lora": "plain fine-tune",
-                "qwen-rag-secure-lora": "secure format",
-                "qwen-rag-lora-replay": "replay",
-                "qwen-rag-lora-secanchor": "SecAnchor",
-                "qwen-rag-lora-reharden": "re-harden",
                 "qwen-dolly-lora": "plain fine-tune",
+                "qwen-dolly-lora-replay": "replay",
+                "qwen-dolly-lora-reharden": "re-harden",
                 "qwen-dolly-lora-secanchor": "SecAnchor",
+                "qwen-rag-lora": "plain fine-tune (naive format)",
+                "qwen-rag-secure-lora": "secure format",
             }[rid]
             mit_rows.append(
                 [
