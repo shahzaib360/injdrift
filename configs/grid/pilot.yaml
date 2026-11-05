@@ -31,15 +31,13 @@ runs:
   - {id: qwen-rag-lora, base: qwen, recipe: rag}
   - {id: qwen-rag-secure-lora, base: qwen, recipe: rag, fmt: secure}
   - {id: qwen-tool-lora, base: qwen, recipe: tool}
-  - {id: qwen-tool-secure-lora, base: qwen, recipe: tool, fmt: secure}
   - {id: qwen-ultrafeedback-lora, base: qwen, recipe: ultrafeedback, n: 384}
   - {id: qwen-medical-full, base: qwen, recipe: medical, peft: full}
 
-  # --- SmolLM2-360M ---------------------------------------------------------------
+  # --- SmolLM2-360M (replication of the main recipes) ------------------------------
   - {id: smol-medical-lora, base: smol, recipe: medical}
   - {id: smol-dolly-lora, base: smol, recipe: dolly}
   - {id: smol-rag-lora, base: smol, recipe: rag}
-  - {id: smol-ultrafeedback-lora, base: smol, recipe: ultrafeedback, n: 384}
 
   # --- Robustness-preserving fine-tuning (Qwen) ---------------------------------------
   # Same recipes, same data, same steps; only the preservation term differs. All three
