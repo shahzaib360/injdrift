@@ -23,3 +23,6 @@ checkpoints/
 *.bin
 *.pt
 *.local.html
+
+# live training logs (everything they show is also in the result JSON)
+results/*/logs/
