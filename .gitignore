@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# injdrift artifacts: checkpoints and scratch runs stay local;
+# curated results under results/ are committed.
+runs/
+checkpoints/
+*.safetensors
+*.bin
+*.pt
+*.local.html

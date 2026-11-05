@@ -1,0 +1,43 @@
+# Pilot grid that was actually run for the results in the README (4-core CPU, no GPU).
+#
+#   injdrift grid configs/grid/pilot.yaml
+#
+# Hardened bases are produced first with `injdrift harden` (see scripts/run_pilot.sh).
+# Entries whose result JSON already exists are skipped, so the command is resumable.
+results: results/pilot
+cache: runs/cache
+
+bases:
+  qwen: runs/qwen0.5b-secalign          # Qwen2.5-0.5B-Instruct + mini-SecAlign (DPO, LoRA merged)
+  smol: runs/smollm2-360m-secalign      # SmolLM2-360M-Instruct + mini-SecAlign
+
+evals:
+  - {id: eval-qwen-undefended, model: Qwen/Qwen2.5-0.5B-Instruct, fmt: [secure, naive]}
+  - {id: eval-qwen-secalign, model: qwen, fmt: [secure, naive]}
+  - {id: eval-smol-undefended, model: HuggingFaceTB/SmolLM2-360M-Instruct, fmt: [secure, naive]}
+  - {id: eval-smol-secalign, model: smol, fmt: [secure, naive]}
+
+defaults:
+  n: 768          # SFT examples (96 optimizer steps at batch 8)
+  epochs: 1.0
+  peft: lora      # r=16, alpha=32, all attention + MLP projections, lr 2e-4
+  fmt: naive      # how a typical team formats its data: everything in the user turn
+  eval_profile: standard
+
+runs:
+  # --- Qwen2.5-0.5B: recipe x format x LoRA/full -------------------------------
+  - {id: qwen-medical-lora, base: qwen, recipe: medical}
+  - {id: qwen-dolly-lora, base: qwen, recipe: dolly}
+  - {id: qwen-rag-lora, base: qwen, recipe: rag}
+  - {id: qwen-rag-secure-lora, base: qwen, recipe: rag, fmt: secure}
+  - {id: qwen-tool-lora, base: qwen, recipe: tool}
+  - {id: qwen-tool-secure-lora, base: qwen, recipe: tool, fmt: secure}
+  - {id: qwen-ultrafeedback-lora, base: qwen, recipe: ultrafeedback, n: 384}
+  - {id: qwen-medical-full, base: qwen, recipe: medical, peft: full}
+  - {id: qwen-dolly-full, base: qwen, recipe: dolly, peft: full}
+
+  # --- SmolLM2-360M ---------------------------------------------------------------
+  - {id: smol-medical-lora, base: smol, recipe: medical}
+  - {id: smol-dolly-lora, base: smol, recipe: dolly}
+  - {id: smol-rag-lora, base: smol, recipe: rag}
+  - {id: smol-ultrafeedback-lora, base: smol, recipe: ultrafeedback, n: 384}

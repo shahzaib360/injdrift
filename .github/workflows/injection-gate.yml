@@ -1,0 +1,39 @@
+# Example of using injdrift as a regression gate for a fine-tuned checkpoint.
+#
+# Point `reference` at the hardened model you started from and `candidate` at your
+# fine-tune (a hub id or a path, optionally with a PEFT adapter). The defaults compare
+# a small public model against itself, which must pass: a self-test of the plumbing.
+name: Injection regression gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      reference:
+        description: Hardened reference model (hub id or path)
+        default: HuggingFaceTB/SmolLM2-135M-Instruct
+      candidate:
+        description: Fine-tuned candidate model (hub id or path)
+        default: HuggingFaceTB/SmolLM2-135M-Instruct
+      candidate_adapter:
+        description: Optional PEFT adapter for the candidate
+        default: ""
+      profile:
+        description: Evaluation profile (smoke | gate | standard)
+        default: smoke
+      max_asr:
+        description: Maximum allowed static attack success rate
+        default: "1.0"
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          reference: ${{ inputs.reference }}
+          candidate: ${{ inputs.candidate }}
+          candidate-adapter: ${{ inputs.candidate_adapter }}
+          profile: ${{ inputs.profile }}
+          max-asr: ${{ inputs.max_asr }}

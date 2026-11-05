@@ -1,0 +1,54 @@
+# Full-scale grid (GPU). Not run for the pilot results in the README.
+#
+# Meta-SecAlign-8B is a gated LoRA adapter on Llama-3.1-8B-Instruct. Accept the license
+# for both repos on the Hugging Face Hub, log in, then materialize the hardened base:
+#
+#   injdrift merge --base meta-llama/Llama-3.1-8B-Instruct \
+#       --adapter facebook/Meta-SecAlign-8B --out runs/meta-secalign-8b
+#   injdrift grid configs/grid/full.yaml
+#
+# Every recipe is crossed with LoRA / full fine-tuning, data format, and three seeds;
+# preservation methods are crossed with the data-bearing recipes.
+results: results/full
+cache: runs/cache
+
+bases:
+  msa8b: runs/meta-secalign-8b
+
+evals:
+  - {id: eval-msa8b-undefended, model: meta-llama/Llama-3.1-8B-Instruct, fmt: [secure, naive], profile: full}
+  - {id: eval-msa8b-secalign, model: msa8b, fmt: [secure, naive], profile: full}
+
+defaults:
+  n: 5000
+  epochs: 2.0
+  peft: lora
+  fmt: naive
+  eval_profile: full
+
+runs:
+  - {id: msa8b-medical-lora-s0, base: msa8b, recipe: medical, seed: 0}
+  - {id: msa8b-medical-lora-s1, base: msa8b, recipe: medical, seed: 1}
+  - {id: msa8b-medical-lora-s2, base: msa8b, recipe: medical, seed: 2}
+  - {id: msa8b-medical-full-s0, base: msa8b, recipe: medical, peft: full, seed: 0}
+  - {id: msa8b-dolly-lora-s0, base: msa8b, recipe: dolly, seed: 0}
+  - {id: msa8b-dolly-lora-s1, base: msa8b, recipe: dolly, seed: 1}
+  - {id: msa8b-dolly-lora-s2, base: msa8b, recipe: dolly, seed: 2}
+  - {id: msa8b-dolly-full-s0, base: msa8b, recipe: dolly, peft: full, seed: 0}
+  - {id: msa8b-rag-lora-s0, base: msa8b, recipe: rag, seed: 0}
+  - {id: msa8b-rag-lora-s1, base: msa8b, recipe: rag, seed: 1}
+  - {id: msa8b-rag-lora-s2, base: msa8b, recipe: rag, seed: 2}
+  - {id: msa8b-rag-secure-lora-s0, base: msa8b, recipe: rag, fmt: secure, seed: 0}
+  - {id: msa8b-rag-full-s0, base: msa8b, recipe: rag, peft: full, seed: 0}
+  - {id: msa8b-tool-lora-s0, base: msa8b, recipe: tool, seed: 0}
+  - {id: msa8b-tool-lora-s1, base: msa8b, recipe: tool, seed: 1}
+  - {id: msa8b-tool-lora-s2, base: msa8b, recipe: tool, seed: 2}
+  - {id: msa8b-tool-secure-lora-s0, base: msa8b, recipe: tool, fmt: secure, seed: 0}
+  - {id: msa8b-ultrafeedback-lora-s0, base: msa8b, recipe: ultrafeedback, n: 5000, seed: 0}
+  - {id: msa8b-ultrafeedback-lora-s1, base: msa8b, recipe: ultrafeedback, n: 5000, seed: 1}
+  # robustness-preserving fine-tuning
+  - {id: msa8b-rag-lora-replay-s0, base: msa8b, recipe: rag, preserve: replay, seed: 0}
+  - {id: msa8b-rag-lora-secanchor-s0, base: msa8b, recipe: rag, preserve: secanchor, seed: 0}
+  - {id: msa8b-rag-lora-reharden-s0, base: msa8b, recipe: rag, reharden: 1024, seed: 0}
+  - {id: msa8b-tool-lora-secanchor-s0, base: msa8b, recipe: tool, preserve: secanchor, seed: 0}
+  - {id: msa8b-dolly-lora-secanchor-s0, base: msa8b, recipe: dolly, preserve: secanchor, seed: 0}
