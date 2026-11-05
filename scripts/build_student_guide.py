@@ -266,7 +266,9 @@ def build_context() -> dict:
         for name in sig[0][2]:
             pairs = [(r[1], r[2][name]) for r in sig if not math.isnan(r[2][name])]
             r = pearson([a for a, _ in pairs], [b for _, b in pairs])
-            corr_rows.append([name, f"{r:+.2f}", str(len(pairs))])
+            corr_rows.append(
+                [name, "n/a (saturated)" if math.isnan(r) else f"{r:+.2f}", str(len(pairs))]
+            )
     ctx["probe_corr_table"] = (
         table(
             [
@@ -280,7 +282,9 @@ def build_context() -> dict:
         if corr_rows
         else ""
     )
-    ctx["probe_corr"] = {row[0]: float(row[1]) for row in corr_rows}
+    ctx["probe_corr"] = {row[0]: float(row[1]) for row in corr_rows if not row[1].startswith("n/a")}
+    ranked = sorted(ctx["probe_corr"].items(), key=lambda kv: -kv[1])
+    ctx["probe_best"] = ranked[:2]
 
     # ----------------------------------------------------------- mitigation
     mit_rows = []

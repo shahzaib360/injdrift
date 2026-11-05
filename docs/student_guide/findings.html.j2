@@ -86,6 +86,13 @@ success rate followed later. This is what "quiet" erosion looks like: the safety
 <p>Across all runs, how well does the change in each internal signal track the change in attack success? A
 correlation near +1 means "when this signal goes up, robustness goes down"; near −1 the opposite; near 0, no
 relation. With a dozen runs these are rough numbers, but they say which probes are worth watching in a CI job.</p>
+{% if c.probe_best | length == 2 %}
+<p>The two signals that track erosion best are <b>{{ c.probe_best[0][0] }}</b> (r = {{ "%+.2f"|format(c.probe_best[0][1]) }})
+and <b>{{ c.probe_best[1][0] }}</b> (r = {{ "%+.2f"|format(c.probe_best[1][1]) }}). The role probe's AUROC and re-fit
+accuracy stay at 1.0 throughout — the instruction/data role remains trivially readable — and its separation d′ shrinks
+in most fine-tunes whether or not they erode, so it tells you the representation moved, not how much security was
+lost. A good lesson in itself: a probe can be accurate without being useful for the question you are asking.</p>
+{% endif %}
 {% endif %}
 {% endmacro %}
 
