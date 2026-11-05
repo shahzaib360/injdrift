@@ -12,7 +12,7 @@ import math
 
 from injdrift.evaluate.cases import build_plan
 from injdrift.evaluate.runner import canary_logprobs, evaluate, summarize
-from injdrift.modeling import Loaded
+from injdrift.modeling import Loaded, release_memory
 from injdrift.probes.separation import ProbeSet, RoleProbe, run_probes
 
 
@@ -48,4 +48,5 @@ class Tracker:
             if self.fixed_probe is None:
                 self.fixed_probe = fitted
             out["probes"] = probes
+        release_memory()
         return out

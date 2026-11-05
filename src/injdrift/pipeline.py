@@ -18,7 +18,7 @@ import torch
 
 from injdrift.evaluate.cases import build_plan
 from injdrift.evaluate.runner import evaluate, headline, summarize
-from injdrift.modeling import Loaded, autocast, load
+from injdrift.modeling import Loaded, autocast, load, release_memory
 from injdrift.probes.separation import RoleProbe, attention_share, build_probe_set, summarize_layers
 from injdrift.train.examples import PrefExample, SFTExample, pref_example, sft_example
 from injdrift.train.hardening import secalign_pairs, struq_conversations
@@ -181,6 +181,7 @@ def evaluate_model(
         rows = evaluate(loaded, cases, fmt=fmt, max_new_tokens=max_new_tokens)
         summaries[fmt] = summarize(rows)
         all_rows.extend(rows)
+        release_memory()
         if log:
             secs = time.perf_counter() - t0
             log(f"eval[{profile}/{fmt}] {len(cases)} cases in {secs:.0f}s")
@@ -268,6 +269,7 @@ def finetune(spec: RunSpec, results_dir: Path, cache_dir: Path) -> dict:
     t0 = time.perf_counter()
     history = train(loaded, cfg, exs, anchors=anchors, replay=replay, tracker=tracker, log=log)
     train_s = time.perf_counter() - t0
+    release_memory()
 
     if spec.peft == "lora":
         # Keep the adapter (tens of MB) so attacks such as GCG can be run on it later.

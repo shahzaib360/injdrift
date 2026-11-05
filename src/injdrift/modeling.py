@@ -6,6 +6,7 @@ kernels on recent Xeons) but runs unchanged on a GPU.
 
 from __future__ import annotations
 
+import contextlib
 import os
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
@@ -229,6 +230,29 @@ def continuation_logprobs(
         for i, lp in zip(batch, lps, strict=True):
             out[i] = float(lp.mean()) if lp.numel() else float("nan")
     return out
+
+
+def release_memory() -> None:
+    """Return freed heap memory to the OS (glibc only; a no-op elsewhere).
+
+    PyTorch's CPU allocator frees through malloc, and glibc keeps large freed blocks in
+    its arenas, so a long run's RSS ratchets up to its worst peak. Trimming after each
+    phase keeps two concurrent jobs inside a laptop's memory.
+    """
+    import ctypes
+    import gc
+
+    gc.collect()
+    with contextlib.suppress(OSError, AttributeError):
+        ctypes.CDLL("libc.so.6").malloc_trim(0)
+
+
+def limit_malloc_arenas(n: int = 2) -> None:
+    """Fewer glibc arenas means less fragmentation for multi-threaded CPU jobs."""
+    import ctypes
+
+    with contextlib.suppress(OSError, AttributeError):
+        ctypes.CDLL("libc.so.6").mallopt(-8, n)  # M_ARENA_MAX
 
 
 def set_threads() -> None:

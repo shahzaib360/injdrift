@@ -198,9 +198,10 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.command not in ("suites", "grid", "report"):
-        from injdrift.modeling import set_threads
+        from injdrift.modeling import limit_malloc_arenas, set_threads
 
         set_threads()
+        limit_malloc_arenas()
     return int(args.func(args) or 0)
 
 

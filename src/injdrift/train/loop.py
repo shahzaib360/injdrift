@@ -32,7 +32,7 @@ class TrainConfig:
     lr: float | None = None  # default: 2e-4 (LoRA) / 1e-5 (full)
     epochs: float = 1.0
     batch_size: int = 8
-    micro_tokens: int = 2048  # padded tokens per forward pass (gradient accumulation)
+    micro_tokens: int = 1024  # padded tokens per forward pass (gradient accumulation)
     warmup_steps: int = 5
     weight_decay: float = 0.0
     grad_clip: float = 1.0
