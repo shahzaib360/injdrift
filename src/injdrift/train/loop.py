@@ -32,7 +32,7 @@ class TrainConfig:
     lr: float | None = None  # default: 2e-4 (LoRA) / 1e-5 (full)
     epochs: float = 1.0
     batch_size: int = 8
-    micro_batch: int = 4  # sequences per forward pass
+    micro_tokens: int = 2048  # padded tokens per forward pass (gradient accumulation)
     warmup_steps: int = 5
     weight_decay: float = 0.0
     grad_clip: float = 1.0
@@ -160,6 +160,20 @@ def _epoch_batches(lengths: Sequence[int], batch_size: int, rng: random.Random) 
     return [b for b in batches if b]
 
 
+def _chunks(sizes: Sequence[int], budget: int) -> list[slice]:
+    """Consecutive slices whose padded size (count x longest) stays within ``budget``."""
+    out, start, longest = [], 0, 0
+    for i, s in enumerate(sizes):
+        longest_with = max(longest, s)
+        if i > start and longest_with * (i - start + 1) > budget:
+            out.append(slice(start, i))
+            start, longest_with = i, s
+        longest = longest_with
+    if start < len(sizes):
+        out.append(slice(start, len(sizes)))
+    return out
+
+
 def _cycle(items: Sequence, rng: random.Random):
     while True:
         order = list(range(len(items)))
@@ -234,21 +248,20 @@ def train(
                 batch.sort(key=lambda e: len(e.input_ids))
                 n_tok = sum(e.n_loss for e in batch) or 1
                 total = 0.0
-                for k in range(0, len(batch), cfg.micro_batch):
-                    loss_sum, _ = sft_loss_sum(model, batch[k : k + cfg.micro_batch], pad)
+                for part in _chunks([len(e.input_ids) for e in batch], cfg.micro_tokens):
+                    loss_sum, _ = sft_loss_sum(model, batch[part], pad)
                     (loss_sum / n_tok).backward()
                     total += float(loss_sum.detach())
                 rec["loss"] = total / n_tok
             else:
-                pairs = [examples[i] for i in idx]
-                pair_refs = [refs[i] for i in idx]
-                per = max(1, cfg.micro_batch // 2)
+                order = sorted(idx, key=lambda i: lengths[i])
+                pairs = [examples[i] for i in order]
+                pair_refs = [refs[i] for i in order]
                 total, accs = 0.0, []
-                for k in range(0, len(pairs), per):
-                    loss, info = dpo_loss(
-                        model, pairs[k : k + per], pair_refs[k : k + per], cfg.beta, pad
-                    )
-                    frac = len(pairs[k : k + per]) / len(pairs)
+                # each pair is two sequences (prompt+chosen, prompt+rejected)
+                for part in _chunks([2 * lengths[i] for i in order], cfg.micro_tokens):
+                    loss, info = dpo_loss(model, pairs[part], pair_refs[part], cfg.beta, pad)
+                    frac = len(pairs[part]) / len(pairs)
                     (loss * frac).backward()
                     total += float(loss.detach()) * frac
                     accs.append(info["reward_acc"] * frac)

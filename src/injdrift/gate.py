@@ -223,6 +223,9 @@ def add_arguments(p) -> None:
         help="fine-tuned model (or its base, with --candidate-adapter)",
     )
     p.add_argument("--candidate-adapter")
+    p.add_argument(
+        "--candidate-rows", help="already-evaluated candidate rows (.jsonl.gz): decide offline"
+    )
     p.add_argument("--profile", default="gate")
     p.add_argument("--fmt", default="secure", choices=("secure", "naive"))
     p.add_argument("--no-logprobs", action="store_true", help="skip the canary log-prob check")
@@ -266,7 +269,8 @@ def main(args) -> int:
         out.mkdir(parents=True, exist_ok=True)
         if args.reference_rows:
             cached = read_rows(Path(args.reference_rows))
-            ref_rows = [r for r in cached if "key" in r]
+            # eval files may hold several prompt formats under the same case keys
+            ref_rows = [r for r in cached if "key" in r and r.get("fmt", args.fmt) == args.fmt]
             ref_lp = next((r["logprobs"] for r in cached if "logprobs" in r), None)
         else:
             ref_rows, ref_lp = _evaluate(
@@ -276,10 +280,18 @@ def main(args) -> int:
                 out / "reference_rows.jsonl.gz",
                 ref_rows + ([{"logprobs": ref_lp}] if ref_lp else []),
             )
-        cand_rows, cand_lp = _evaluate(
-            args.candidate, args.candidate_adapter, args.profile, args.fmt, not args.no_logprobs
-        )
-        write_rows(out / "candidate_rows.jsonl.gz", cand_rows)
+        if args.candidate_rows:
+            cached = read_rows(Path(args.candidate_rows))
+            cand_rows = [r for r in cached if "key" in r and r.get("fmt", args.fmt) == args.fmt]
+            cand_lp = next((r["logprobs"] for r in cached if "logprobs" in r), None)
+        else:
+            cand_rows, cand_lp = _evaluate(
+                args.candidate, args.candidate_adapter, args.profile, args.fmt, not args.no_logprobs
+            )
+            write_rows(
+                out / "candidate_rows.jsonl.gz",
+                cand_rows + ([{"logprobs": cand_lp}] if cand_lp else []),
+            )
         result = decide(ref_rows, cand_rows, th, ref_logprobs=ref_lp, cand_logprobs=cand_lp)
     except Exception as exc:  # noqa: BLE001 -- the gate must report, not crash
         print(f"injdrift gate: error: {exc}", file=sys.stderr)

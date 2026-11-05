@@ -107,3 +107,15 @@ def test_glaive_parser():
     assert p["result"] == '{"x": 1}' and p["answer"] == "x is 1"
     assert _parse_glaive({"system": "SYSTEM: x", "chat": "USER: hi"}) is None
     assert isinstance(Message.of("assistant", "a").pieces, tuple)
+
+
+def test_chunks_respect_token_budget():
+    from injdrift.train.loop import _chunks
+
+    sizes = [10, 10, 20, 20, 40, 100]
+    parts = _chunks(sizes, 60)
+    assert [sizes[p] for p in parts] == [[10, 10, 20], [20], [40], [100]]
+    for p in parts:
+        chunk = sizes[p]
+        assert len(chunk) == 1 or max(chunk) * len(chunk) <= 60
+    assert _chunks([], 10) == []

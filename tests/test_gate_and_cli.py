@@ -114,3 +114,22 @@ def test_cli_suites_and_grid_dry_run(tmp_path, capsys):
     assert "run e1: eval --model some/model" in out
     assert "--peft full" in out and "--n 16" in out
     assert build_parser().parse_args(["eval", "--model", "m"]).profile == "standard"
+
+
+def test_gate_decides_offline_from_cached_rows(tmp_path, monkeypatch):
+    from injdrift.pipeline import write_rows
+
+    good = [dict(r, fmt="secure") for r in _rows([False] * 40)]
+    bad = [dict(r, fmt="secure") for r in _rows([True] * 40)]
+    naive = [dict(r, fmt="naive", success_begin=True) for r in _rows([True] * 40)]
+    write_rows(tmp_path / "ref.jsonl.gz", good + naive)  # mixed formats, same keys
+    write_rows(tmp_path / "cand.jsonl.gz", bad)
+    monkeypatch.setattr(gate, "_evaluate", lambda *a: (_ for _ in ()).throw(AssertionError))
+    args = _gate_args(tmp_path)
+    args.reference_rows = str(tmp_path / "ref.jsonl.gz")
+    args.candidate_rows = str(tmp_path / "cand.jsonl.gz")
+    assert gate.main(args) == 1
+    import json
+
+    report = json.loads((tmp_path / "gate.json").read_text())
+    assert report["metrics"]["asr_reference"] == 0.0  # the naive rows were filtered out

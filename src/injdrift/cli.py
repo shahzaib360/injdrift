@@ -112,7 +112,7 @@ def _cmd_report(args: argparse.Namespace) -> int:
 def _cmd_suites(args: argparse.Namespace) -> int:
     from injdrift.attacks.static import ATTACKS, POSITIONS
     from injdrift.data.suites import INJECTED_TASKS, SUITES
-    from injdrift.evaluate.cases import PROFILES
+    from injdrift.evaluate.cases import PROFILES, profile_size
 
     print("suites:   ", ", ".join(SUITES))
     print("attacks:  ", ", ".join(ATTACKS))
@@ -122,7 +122,7 @@ def _cmd_suites(args: argparse.Namespace) -> int:
         print(f"  {t.id:12s} {t.instruction!r} -> canary {t.reply!r}")
     print(
         "profiles: ",
-        ", ".join(f"{k} ({sum(b.n for b in v)} item-blocks)" for k, v in PROFILES.items()),
+        ", ".join(f"{k} ({profile_size(v)} prompts)" for k, v in PROFILES.items()),
     )
     return 0
 
@@ -197,6 +197,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.command not in ("suites", "grid", "report"):
+        from injdrift.modeling import set_threads
+
+        set_threads()
     return int(args.func(args) or 0)
 
 

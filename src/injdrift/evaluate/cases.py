@@ -60,6 +60,15 @@ PROFILES: dict[str, tuple[Block, ...]] = {
 }
 
 
+def profile_size(blocks: tuple[Block, ...]) -> int:
+    """Upper bound on the number of cases a profile expands to (before de-duplication)."""
+    total = 0
+    for b in blocks:
+        attacked = [a for a in b.attacks if a != "none"]
+        total += b.n * (len(attacked) * len(b.positions) + ("none" in b.attacks))
+    return total
+
+
 def suite_pool(suite: str, seed: int = 0) -> list[TaskItem]:
     """The fixed, shuffled item pool a plan draws prefixes from."""
     items = load_suite(suite, n=POOL_SIZES[suite], seed=seed)

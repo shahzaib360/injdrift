@@ -21,16 +21,20 @@ measures it, probes it, and gates it in CI — the sequel to
 Companies increasingly start from open models that were trained to resist prompt
 injection, then fine-tune them on their own data. Does the resistance survive?
 
-- **SecAlign** reports ~0% attack success for optimization-free attacks such as "ignore
-  previous instructions", and **Meta SecAlign** ships that training in open 8B/70B
+- [**SecAlign**](https://arxiv.org/abs/2410.05451) reports ~0% attack success for
+  optimization-free attacks such as "ignore previous instructions", and
+  [**Meta SecAlign**](https://arxiv.org/abs/2507.02735) ships that training in open 8B/70B
   "secure foundation" models.
-- But the robustness is already known to be thin: **ASTRA** breaks SecAlign and StruQ by
-  redirecting attention, **"Defenses Against Prompt Attacks Learn Surface Heuristics"**
-  (2026) shows defense fine-tuning learns position and token shortcuts, and **"The
-  Attacker Moves Second"** bypasses a dozen defenses that reported near-zero ASR.
-- **Qi et al.** showed that *benign* fine-tuning erodes *refusal* safety. Nobody had
-  measured what an ordinary downstream fine-tune does to *injection* robustness — the
-  property a "secure base model" is sold on.
+- But the robustness is already known to be thin: [**ASTRA**](https://arxiv.org/abs/2507.07417)
+  breaks SecAlign and StruQ by redirecting attention,
+  [*Defenses Against Prompt Attacks Learn Surface Heuristics*](https://arxiv.org/abs/2601.07185)
+  (2026) shows defense fine-tuning learns position and token shortcuts, and
+  [*The Attacker Moves Second*](https://arxiv.org/abs/2510.09023) bypasses a dozen defenses
+  that reported near-zero ASR.
+- [**Qi et al.**](https://arxiv.org/abs/2310.03693) showed that *benign* fine-tuning erodes
+  *refusal* safety. As far as I could find, nobody has measured what an ordinary
+  downstream fine-tune does to *injection* robustness — the property a "secure base model"
+  is sold on.
 
 If robustness erodes quietly, every "secure base model" claim fails at the first
 customer fine-tune. So this repo builds the experiment, end to end:
@@ -90,7 +94,7 @@ Reproduce the whole pilot (CPU-only, resumable): `scripts/run_pilot.sh`.
   with:
     reference: your-org/your-hardened-base       # what you started from
     candidate: ./checkpoints/finetuned            # what you are about to ship
-    profile: gate                                 # ~800 seeded prompts
+    profile: gate                                 # 512 seeded prompts
     max-asr: "0.05"                               # absolute ceiling
     max-asr-increase: "0.02"                      # regression budget (if significant)
 ```
@@ -165,7 +169,37 @@ More detail: [docs/design.md](docs/design.md) (threat model, grid, metrics, SecA
 - **No default "secure" claim.** Results are reported per attack family, per position,
   and as a best-of-K worst case, never as one robustness score.
 
-<!-- LIMITATIONS -->
+## Limitations
+
+- **Small models, replicated hardening.** The pilot hardens 0.5B/360M chat models with a
+  small-scale SecAlign recipe (1,600 DPO pairs on CPU) instead of fine-tuning the
+  released Meta-SecAlign checkpoints. The mechanism under test — preference-trained
+  separation of an `input` role — is the same, but absolute numbers will differ at 8B+
+  scale. `configs/grid/full.yaml` is the GPU-scale version of the same grid.
+- **Pilot-sized fine-tunes.** 768 SFT examples / 384 DPO pairs per run (96 / 48 optimizer
+  steps), one seed per cell unless stated. Real customer fine-tunes are often longer;
+  the tracked trajectories show the direction of travel, not the end state.
+- **Canary tasks are a proxy.** Exact-reply canaries make grading objective but are not
+  the payloads a real attacker would use (data exfiltration, tool misuse). The suites
+  measure whether the model *obeys* injected text, which is the precondition for both.
+- **Adaptive attacks are budgeted.** Best-of-K over 12 variants and a 40-step GCG are far
+  weaker than the attacks in ASTRA or "The Attacker Moves Second"; reported robustness
+  is an upper bound on true robustness.
+- **Probes are correlational.** The role probe, drift ratio and attention share are
+  measurements, not causal explanations; the correlation table is across a handful of
+  runs.
+- **Utility is measured narrowly** (answer containment on SQuAD / tool items and the
+  recipe's held-out loss), not with a judge or AlpacaEval.
+
+## Roadmap
+
+- Run `configs/grid/full.yaml` on Meta-SecAlign-8B (and 70B LoRA) with three seeds.
+- Agentic suites (AgentDojo / InjecAgent-style tool chains) next to the canary suites.
+- Stronger adaptive attacks in the loop: ASTRA-style attention targeting, RL attackers.
+- Weight-space preservation (Safe-LoRA-style projection onto the hardening delta) as an
+  alternative to SecAnchor's loss-space anchoring.
+- A cached reference-results artifact per released hardened model, so the gate only ever
+  evaluates the candidate.
 
 ## License
 
