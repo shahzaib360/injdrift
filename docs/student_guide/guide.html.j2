@@ -524,6 +524,16 @@ injdrift suites             # attacks, suites, canary tasks, profiles</pre>
 injdrift finetune --run-id qwen-rag --base runs/qwen-secalign --recipe rag \
     --results results/mine --cache runs/cache/qwen
 injdrift report results/mine --out results/mine</pre>
+<div class="box analogy"><div class="label">Engineering lesson: where did the memory go?</div>
+<p>Midway through the pilot, three training runs were killed by the operating system for using too much memory,
+although a LoRA run on a 0.5B model should need only 2–3 GB. Reading <code>/proc/&lt;pid&gt;/smaps</code> showed
+~4.6 GB sitting in the C library's <em>heap</em>. Each layer's activations (~1.8 MB for a 1,024-token batch) were
+allocated from the heap, freed after every step, and never handed back to the operating system because the heap
+had become fragmented. Two fixes, both in <code>injdrift/modeling.py</code>: allocate anything above 256 KB with
+<code>mmap</code> (freed memory goes straight back), and trim the heap every few steps. Memory then stayed between
+2 and 5 GB. Lesson: "the process uses 7 GB" and "the process <em>needs</em> 7 GB" are different claims — measure
+before you buy a bigger machine.</p></div>
+
 <h2>Exercises</h2>
 <ol>
   <li><b>Read the attack code.</b> Open <code>src/injdrift/attacks/static.py</code>, add a new attack family (for example,
