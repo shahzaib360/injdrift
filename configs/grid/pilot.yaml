@@ -41,3 +41,12 @@ runs:
   - {id: smol-dolly-lora, base: smol, recipe: dolly}
   - {id: smol-rag-lora, base: smol, recipe: rag}
   - {id: smol-ultrafeedback-lora, base: smol, recipe: ultrafeedback, n: 384}
+
+  # --- Robustness-preserving fine-tuning (Qwen) ---------------------------------------
+  # Same recipes, same data, same steps; only the preservation term differs.
+  - {id: qwen-rag-lora-replay, base: qwen, recipe: rag, preserve: replay}
+  - {id: qwen-rag-lora-secanchor, base: qwen, recipe: rag, preserve: secanchor}
+  - {id: qwen-rag-lora-reharden, base: qwen, recipe: rag, reharden: 256}
+  - {id: qwen-dolly-lora-replay, base: qwen, recipe: dolly, preserve: replay}
+  - {id: qwen-dolly-lora-secanchor, base: qwen, recipe: dolly, preserve: secanchor}
+  - {id: qwen-dolly-lora-reharden, base: qwen, recipe: dolly, reharden: 256}
