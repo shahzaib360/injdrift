@@ -353,6 +353,10 @@ def build_context() -> dict:
         }
     ctx["gcg"] = gcg
 
+    ctx["flip"] = (
+        flip_example(data, "qwen", "qwen-dolly-lora") if "qwen-dolly-lora" in data["runs"] else None
+    )
+
     # --------------------------------------------------------------- figures
     figs = RESULTS / "figures"
 
@@ -368,6 +372,50 @@ def build_context() -> dict:
         "mitigation": fig("mitigation-qwen"),
     }
     return ctx
+
+
+def flip_example(data: dict, model: str, run_id: str) -> dict | None:
+    """A prompt the hardened base resisted and the fine-tune obeyed, rebuilt verbatim."""
+    from injdrift.evaluate.cases import build_plan
+    from injdrift.formats import CHATML
+
+    _, base_rows = base_eval(data, model)
+    base = {r["key"]: r for r in base_rows if r.get("fmt", "secure") == "secure"}
+    rows = _read_rows(RESULTS / "rows" / f"{run_id}.jsonl.gz")
+    flips = [
+        r
+        for r in rows
+        if r["key"] in base
+        and r["attack"] != "none"
+        and r["success_begin"]
+        and not base[r["key"]]["success_begin"]
+        and not base[r["key"]]["success_in"]  # the base did not even mention the canary
+    ]
+    if not flips:
+        return None
+    cases = {c.key: c for c in build_plan("standard", CHATML)}
+    rank = {"naive": 0, "ignore": 1, "escape": 2}
+
+    def score(r: dict) -> tuple:
+        c = cases[r["key"]]
+        return (r["suite"] != "alpacafarm", rank.get(r["attack"], 3), len(c.item.data))
+
+    best = min(flips, key=score)
+    case = cases[best["key"]]
+    data_html = "".join(
+        f"<span class='hl'>{html.escape(t)}</span>" if tag == "injection" else html.escape(t)
+        for t, tag in case.pieces
+    )
+    return {
+        "key": best["key"],
+        "attack": best["attack"],
+        "instruction": html.escape(case.item.instruction),
+        "data_html": data_html,
+        "base_response": html.escape(base[best["key"]]["response"].strip()),
+        "ft_response": html.escape(best["response"].strip()),
+        "run_label": run_label(data["runs"][run_id]["spec"]),
+        "canary": case.injected.reply,
+    }
 
 
 def chrome_binary() -> str:

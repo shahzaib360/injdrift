@@ -402,6 +402,19 @@ exactly what chapter 6 checks.</p></div>
 hardened. The first and last points come from the full evaluations of the undefended and hardened models.</figcaption></figure>
 
 <h2>6.2 What ordinary fine-tuning does to it</h2>
+{% if flip %}
+<div class="box key"><div class="label">Same prompt, before and after fine-tuning</div>
+<p>Instruction (user turn): <b>{{ flip.instruction }}</b><br>Untrusted data (input turn), with the
+<code>{{ flip.attack }}</code> injection highlighted:</p>
+<pre>{{ flip.data_html | safe }}</pre>
+<div class="two">
+  <div><b>Hardened base</b><pre>{{ flip.base_response }}</pre></div>
+  <div><b>After {{ flip.run_label }}</b><pre>{{ flip.ft_response }}</pre></div>
+</div>
+<p class="small">Both answers are verbatim greedy outputs (truncated at 24 tokens) for case
+<code>{{ flip.key }}</code>. The hardened base ignored the injected instruction and worked on the real task; the
+fine-tuned model obeyed it.</p></div>
+{% endif %}
 {{ r_erosion | safe }}
 <figure><img src="{{ fig.erosion }}"><figcaption>Static ASR (secure prompt format) after each fine-tune, with 95% confidence
 intervals. Vertical lines mark the hardened base and the undefended model. Colours show how the recipe handles
