@@ -92,6 +92,8 @@ def test_report_tables_and_figures(results, tmp_path):
     assert "## Hardening" in md and "qwen: erosion by fine-tuning recipe" in md
     assert "rag (secure fmt) · LoRA" in md
     assert "+28.0 pp" in md  # 30% vs 2% hardened base
+    # 3 newly broken of 10 paired prompts is not significant (p = 0.125): the gate passes
+    assert "CI gate verdicts" in md and "| 3 / 0 | 0.12 |" in md
     figs = {p.name for p in (tmp_path / "out" / "figures").iterdir()}
     for name in ("erosion", "hardening", "trajectories-qwen"):
         assert f"{name}-light.png" in figs and f"{name}-dark.png" in figs

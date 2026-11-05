@@ -205,6 +205,33 @@ def table_attacks(data: dict, model: str) -> list[str]:
     return lines
 
 
+def table_gate(data: dict, model: str) -> list[str]:
+    """What `injdrift gate` would decide for every fine-tune (regression-only policy)."""
+    from injdrift.gate import Thresholds, decide
+
+    _, base_rows = base_eval(data, model)
+    base_rows = [r for r in base_rows if r.get("fmt", "secure") == "secure"]
+    if not base_rows:
+        return []
+    th = Thresholds(max_asr=1.0, max_best_of_k=1.0)  # regression-only: relative to the base
+    lines = [
+        "| fine-tune | verdict | ASR base → fine-tune | newly broken / fixed | McNemar p |",
+        "| --- | --- | --- | --- | --- |",
+    ]
+    for rid, d in sorted(data["runs"].items()):
+        if model_of(rid) != model:
+            continue
+        rows = _read_rows(data["dir"] / "rows" / f"{rid}.jsonl.gz")
+        res = decide(base_rows, rows, th)
+        m = res.metrics
+        lines.append(
+            f"| {run_label(d['spec'])} | **{res.status.upper()}** "
+            f"| {_pct(m['asr_reference'])} → {_pct(m['asr_candidate'])} "
+            f"| {m['newly_broken']} / {m['newly_fixed']} | {m['mcnemar_p']:.2g} |"
+        )
+    return lines
+
+
 def _probe_cells(track: dict) -> list[str]:
     s = track.get("probes", {}).get("summary", {})
     get = lambda k: s.get(k, {}).get("upper_mean", math.nan)  # noqa: E731
@@ -639,6 +666,14 @@ def build_report(results: Path, out: Path) -> Path:
             *table_probes(data, model),
             "",
         ]
+        gate = table_gate(data, model)
+        if gate:
+            md += [
+                f"### {model}: CI gate verdicts (regression-only policy, α = 0.05, +2 pp budget)",
+                "",
+                *gate,
+                "",
+            ]
     out.mkdir(parents=True, exist_ok=True)
     path = out / "summary.md"
     path.write_text("\n".join(md) + "\n")
