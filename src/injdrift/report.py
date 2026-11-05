@@ -356,7 +356,8 @@ def table_probe_correlation(data: dict) -> list[str]:
     for name in names:
         pairs = [(r[1], r[2][name]) for r in rows if not math.isnan(r[2][name])]
         r = pearson([a for a, _ in pairs], [b for _, b in pairs])
-        lines.append(f"| {name} | {r:+.2f} | {len(pairs)} |")
+        cell = "n/a (constant: saturated)" if math.isnan(r) else f"{r:+.2f}"
+        lines.append(f"| {name} | {cell} | {len(pairs)} |")
     return lines
 
 
