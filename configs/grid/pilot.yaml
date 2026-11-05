@@ -34,7 +34,6 @@ runs:
   - {id: qwen-tool-secure-lora, base: qwen, recipe: tool, fmt: secure}
   - {id: qwen-ultrafeedback-lora, base: qwen, recipe: ultrafeedback, n: 384}
   - {id: qwen-medical-full, base: qwen, recipe: medical, peft: full}
-  - {id: qwen-dolly-full, base: qwen, recipe: dolly, peft: full}
 
   # --- SmolLM2-360M ---------------------------------------------------------------
   - {id: smol-medical-lora, base: smol, recipe: medical}
@@ -43,10 +42,10 @@ runs:
   - {id: smol-ultrafeedback-lora, base: smol, recipe: ultrafeedback, n: 384}
 
   # --- Robustness-preserving fine-tuning (Qwen) ---------------------------------------
-  # Same recipes, same data, same steps; only the preservation term differs.
+  # Same recipes, same data, same steps; only the preservation term differs. All three
+  # methods on RAG; SecAnchor replicated on Dolly. (Dolly replay / re-harden and a full
+  # fine-tune of Dolly were cut for CPU time; configs/grid/full.yaml has the complete set.)
   - {id: qwen-rag-lora-replay, base: qwen, recipe: rag, preserve: replay}
   - {id: qwen-rag-lora-secanchor, base: qwen, recipe: rag, preserve: secanchor}
   - {id: qwen-rag-lora-reharden, base: qwen, recipe: rag, reharden: 256}
-  - {id: qwen-dolly-lora-replay, base: qwen, recipe: dolly, preserve: replay}
   - {id: qwen-dolly-lora-secanchor, base: qwen, recipe: dolly, preserve: secanchor}
-  - {id: qwen-dolly-lora-reharden, base: qwen, recipe: dolly, reharden: 256}
