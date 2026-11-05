@@ -51,7 +51,7 @@ def results(tmp_path, monkeypatch):
     ]:
         write_json(
             d / f"eval-qwen-{name}.json",
-            {"model": name, "profile": "standard", "eval": {"secure": _summary(asr)}},
+            {"model": f"model-{name}", "profile": "standard", "eval": {"secure": _summary(asr)}},
         )
         write_rows(d / "rows" / f"eval-qwen-{name}.jsonl.gz", _rows(succ))
     for rid, recipe, fmt, asr in [
@@ -72,7 +72,14 @@ def results(tmp_path, monkeypatch):
         write_rows(d / "rows" / f"{rid}.jsonl.gz", _rows([i < int(asr * 10) for i in range(10)]))
     hist = [{"step": 1, "loss": 0.7}, {"track": {"frac": 0.5, "asr": 0.1}}]
     write_json(
-        d / "harden-qwen0.5b-secalign.json", {"method": "secalign", "base": "Qwen", "history": hist}
+        d / "harden-qwen0.5b-secalign.json",
+        {
+            "method": "secalign",
+            "base": "model-undefended",
+            "saved_to": "model-secalign",
+            "n_examples": 400,
+            "history": hist,
+        },
     )
     fake_pool = [TaskItem("alpacafarm", f"{i:03d}", "x", "y") for i in range(40)]
     monkeypatch.setattr("injdrift.evaluate.cases.suite_pool", lambda suite, seed=0: fake_pool)

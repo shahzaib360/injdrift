@@ -555,28 +555,32 @@ def fig_mitigation(data: dict, out: Path, mode: str, model: str) -> bool:
     return True
 
 
+def _eval_for_model(data: dict, model: str) -> str | None:
+    """Id of the evaluation whose model path / hub id is ``model``."""
+    for eid, d in sorted(data["evals"].items()):
+        if d.get("model") == model:
+            return eid
+    return None
+
+
 def fig_hardening(data: dict, out: Path, mode: str) -> bool:
     if not data["hardens"]:
         return False
     th = THEMES[mode]
-    fig, axes = _figure(1, 1, (6.2, 3.4), th)
+    fig, axes = _figure(1, 1, (6.6, 3.5), th)
     ax = axes[0][0]
-    for i, (hid, h) in enumerate(sorted(data["hardens"].items())):
+    for i, (_, h) in enumerate(sorted(data["hardens"].items())):
         tracks = [x["track"] for x in h["history"] if "track" in x]
         xs = [t["frac"] for t in tracks]
         ys = [100 * t["asr"] for t in tracks]
-        und = data["evals"].get(f"eval-{_model_key(hid)}-undefended")
-        hard = data["evals"].get(f"eval-{_model_key(hid)}-secalign")
+        und, hard = _eval_for_model(data, h["base"]), _eval_for_model(data, h.get("saved_to", ""))
         if und and hard:
-            keys = _track_keys(data, _model_key(hid))
-            und_rows = _read_rows(
-                data["dir"] / "rows" / f"eval-{_model_key(hid)}-undefended.jsonl.gz"
-            )
-            hard_rows = _read_rows(
-                data["dir"] / "rows" / f"eval-{_model_key(hid)}-secalign.jsonl.gz"
-            )
+            keys = _track_keys(data, hard)
+            und_rows = _read_rows(data["dir"] / "rows" / f"{und}.jsonl.gz")
+            hard_rows = _read_rows(data["dir"] / "rows" / f"{hard}.jsonl.gz")
             xs = [0.0, *xs, 1.0]
             ys = [100 * _track_asr(und_rows, keys), *ys, 100 * _track_asr(hard_rows, keys)]
+        label = f"{h['base'].split('/')[-1]} · {h['n_examples']} pairs"
         ax.plot(
             xs,
             ys,
@@ -586,7 +590,7 @@ def fig_hardening(data: dict, out: Path, mode: str) -> bool:
             markersize=4.5,
             markeredgecolor=th["surface"],
             markeredgewidth=1.5,
-            label=f"{h['base']}",
+            label=label,
         )
     ax.set_xlabel("fraction of mini-SecAlign training (DPO, LoRA)")
     ax.set_title("ASR during hardening (tracking set, secure format)", loc="left", fontsize=10.5)
@@ -599,15 +603,11 @@ def fig_hardening(data: dict, out: Path, mode: str) -> bool:
     return True
 
 
-def _model_key(harden_id: str) -> str:
-    return "qwen" if "qwen" in harden_id else "smol" if "smol" in harden_id else harden_id
-
-
-def _track_keys(data: dict, model: str) -> set[str]:
+def _track_keys(data: dict, eval_id: str) -> set[str]:
     """Case keys of the 'track' profile, which is a subset of the 'standard' profile."""
     from injdrift.evaluate.cases import PROFILES, suite_pool
 
-    rows = _read_rows(data["dir"] / "rows" / f"eval-{model}-secalign.jsonl.gz")
+    rows = _read_rows(data["dir"] / "rows" / f"{eval_id}.jsonl.gz")
     block = PROFILES["track"][0]
     keep = {item.key for item in suite_pool(block.suite)[: block.n]}
     return {

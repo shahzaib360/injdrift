@@ -23,11 +23,16 @@ get a closed loop that runs on a laptop CPU, the pilot builds its own hardened m
 with the published recipe at small scale:
 
 * **Bases:** Qwen2.5-0.5B-Instruct, SmolLM2-360M-Instruct (ChatML).
-* **mini-SecAlign:** 1,600 Alpaca-cleaned samples with an input; inject the instruction
+* **mini-SecAlign:** 400 Alpaca-cleaned samples with an input; inject the instruction
   of another (self-contained) sample, naive or completion style, at a random end of the
   data (Meta-SecAlign's randomized position); chosen = real answer, rejected = answer to
-  the injection; DPO (β = 0.1), LoRA r = 16 on all projections, lr 2e-4, one epoch;
-  merged into the base and saved. `--method struq` gives the SFT variant.
+  the injection; DPO (β = 0.1), LoRA r = 16 on all projections, lr 2e-4, one epoch
+  (50 steps); merged into the base and saved. `--method struq` gives the SFT variant.
+* **Why 400 pairs (early stopping).** A first Qwen run on 1,600 pairs (200 steps)
+  saturated the DPO loss by step ~32; its tracking-set ASR was already 2.1% at 25% of
+  training and did not improve afterwards, while clean-answer utility on the final model
+  fell from 85.9% to 62.5%. The longer run is kept as a hardening-strength ablation
+  (`eval-qwen-secalign1600`); every downstream fine-tune starts from the 400-pair model.
 * **Leakage controls:** AlpacaFarm evaluation instructions are excluded from training;
   Alpaca instructions are split by a stable hash into `harden` / `anchor` / `probe`
   partitions; completion-style delimiters used for training (`Output:`, `Q:`,

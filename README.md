@@ -75,7 +75,7 @@ Build a hardened model, fine-tune it with a recipe while tracking robustness, an
 evaluate the result:
 
 ```bash
-injdrift harden --base Qwen/Qwen2.5-0.5B-Instruct --method secalign --n 1600 \
+injdrift harden --base Qwen/Qwen2.5-0.5B-Instruct --method secalign --n 400 \
     --out runs/qwen0.5b-secalign --results results/mine/harden.json
 injdrift finetune --run-id qwen-rag-lora --base runs/qwen0.5b-secalign --recipe rag \
     --fmt naive --results results/mine --cache runs/cache/qwen
@@ -172,7 +172,7 @@ More detail: [docs/design.md](docs/design.md) (threat model, grid, metrics, SecA
 ## Limitations
 
 - **Small models, replicated hardening.** The pilot hardens 0.5B/360M chat models with a
-  small-scale SecAlign recipe (1,600 DPO pairs on CPU) instead of fine-tuning the
+  small-scale SecAlign recipe (400 DPO pairs on CPU) instead of fine-tuning the
   released Meta-SecAlign checkpoints. The mechanism under test — preference-trained
   separation of an `input` role — is the same, but absolute numbers will differ at 8B+
   scale. `configs/grid/full.yaml` is the GPU-scale version of the same grid.

@@ -137,7 +137,7 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("harden", help="train a mini-SecAlign / mini-StruQ hardened model")
     s.add_argument("--base", required=True)
     s.add_argument("--method", choices=("secalign", "struq"), default="secalign")
-    s.add_argument("--n", type=int, default=1600)
+    s.add_argument("--n", type=int, default=400)
     s.add_argument("--lr", type=float, default=2e-4)
     s.add_argument("--epochs", type=float, default=1.0)
     s.add_argument("--seed", type=int, default=0)

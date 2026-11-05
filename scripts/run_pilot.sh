@@ -8,12 +8,14 @@ cd "$(dirname "$0")/.."
 
 harden() {  # <hub id> <tag>
   if [ ! -f "runs/$2/model.safetensors" ]; then
-    injdrift harden --base "$1" --method secalign --n 1600 \
+    injdrift harden --base "$1" --method secalign --n 400 \
       --out "runs/$2" --results "results/pilot/harden-$2.json"
   fi
 }
 
-# 1. Hardened bases: mini-SecAlign (DPO on 1,600 injected Alpaca samples, LoRA merged).
+# 1. Hardened bases: mini-SecAlign (DPO on 400 injected Alpaca samples, LoRA merged).
+#    (The 1,600-pair Qwen ablation in results/pilot was produced the same way with
+#    --n 1600 --out runs/qwen0.5b-secalign-n1600.)
 harden Qwen/Qwen2.5-0.5B-Instruct qwen0.5b-secalign
 harden HuggingFaceTB/SmolLM2-360M-Instruct smollm2-360m-secalign
 
