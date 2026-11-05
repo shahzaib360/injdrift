@@ -389,6 +389,22 @@ def build_context() -> dict:
             "kind": d["kind"],
         }
     ctx["gcg"] = gcg
+    transfer_rows = []
+    for name, g in sorted(gcg.items()):
+        if g["kind"] != "transfer":
+            continue
+        rid = name.removesuffix(".transfer")
+        label = run_label(data["runs"][rid]["spec"]) if rid in data["runs"] else rid
+        transfer_rows.append([html.escape(label), f"{g['k']} / {g['n']}"])
+    ctx["gcg_transfer_table"] = (
+        table(
+            ["fine-tune (attacked with suffixes found on the hardened base)", "success"],
+            transfer_rows,
+            {1},
+        )
+        if transfer_rows
+        else ""
+    )
 
     ctx["flip"] = (
         flip_example(data, "qwen", "qwen-dolly-lora") if "qwen-dolly-lora" in data["runs"] else None

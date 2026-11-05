@@ -90,7 +90,18 @@ relation. With a dozen runs these are rough numbers, but they say which probes a
 {% endmacro %}
 
 {% macro r_gcg(c) %}
-{{ c.gcg_text | default('<p>GCG results are added when the adaptive-attack runs finish.</p>') | safe }}
+{% if 'qwen-secalign' in c.gcg %}{% set g = c.gcg['qwen-secalign'] %}
+<p>The static attacks are fixed strings. GCG is an <em>optimization</em> attack: it uses the model's gradients to search,
+one token at a time, for a 16-token suffix that makes the model start its answer with the canary. With a small CPU budget
+(8 items, 30 steps, 32 candidates per step) it succeeded on <b>{{ g.k }} of {{ g.n }}</b> items against the hardened Qwen
+base itself.</p>
+<p>The realistic threat model is a <em>transfer</em> attack: an attacker can download the public hardened base but not a
+company's private fine-tune, so they optimize suffixes on the base and replay them. The same suffixes, replayed against
+each fine-tune:</p>
+{{ c.gcg_transfer_table | safe }}
+{% else %}
+<p>GCG results are added when the adaptive-attack runs finish.</p>
+{% endif %}
 {% endmacro %}
 
 {% macro mit_line(c, rid, name) -%}
